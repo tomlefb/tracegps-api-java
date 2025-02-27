@@ -22,30 +22,7 @@ public abstract class PasserelleXML {
 
     // méthode protégée statique pour obtenir un flux en lecture (java.io.InputStream)
     // à partir de l'adresse d'un fichier ou de l'URL d'un service web
-    protected static InputStream getFluxEnLecture(String adrFichierOuServiceWeb)
-    {
-		InputStream unFluxEnLecture;
-		try
-		{
-			if (adrFichierOuServiceWeb.startsWith("http"))
-			{	// connexion HTTP au service web
-				URL url = new URL(adrFichierOuServiceWeb);
-				HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-
-				// récupération de la réponse dans un flux en lecture (InputStream)
-				unFluxEnLecture = new BufferedInputStream(urlConnection.getInputStream());
-
-			}
-			else
-			{	// création d'un flux en lecture (InputStream) depuis le fichier
-				unFluxEnLecture = new FileInputStream(new File(adrFichierOuServiceWeb));
-			}
-			return unFluxEnLecture;
-		}
-		catch (Exception ex)
-		{	return null;
-		}	
-    }
+	protected static InputStream getFluxEnLecture(String payload) {    InputStream unFluxEnLecture = null;    try {       if (payload.startsWith("http")) {          HttpURLConnection urlConnection = (HttpURLConnection) new URL(payload).openConnection();          int code = urlConnection.getResponseCode();          if (code == HttpURLConnection.HTTP_OK) {             unFluxEnLecture = urlConnection.getInputStream();          } else {             unFluxEnLecture = urlConnection.getErrorStream();          }       } else {          unFluxEnLecture = new FileInputStream(new File(payload));       }       return unFluxEnLecture;    } catch (Exception ex) {       System.out.println("Erreur dans getFluxEnLecture : " + ex.getMessage());       return null;    }}
 
     // méthode protégée statique pour obtenir document XML (org.w3c.dom.Document)
     // à partir d'un flux de données en lecture (java.io.InputStream)

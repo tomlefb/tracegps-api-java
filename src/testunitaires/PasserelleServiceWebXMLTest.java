@@ -14,27 +14,42 @@ import classes.Trace;
 import classes.Utilisateur;
 
 public class PasserelleServiceWebXMLTest {
-	
+
 	@Test
 	public void testConnecter() {
-		fail("Not yet implemented");
+		String msg = PasserelleServicesWebXML.connecter("admin", "adminnnnnnnn");
+		assertEquals("Erreur : authentification incorrecte.", msg);
+
+		msg = PasserelleServicesWebXML.connecter("admin", Outils.sha1("mdpadmin"));
+		assertEquals("Administrateur authentifié.", msg);
+
+		msg = PasserelleServicesWebXML.connecter("europa", Outils.sha1("mdputilisateur"));
+		assertEquals("Utilisateur authentifié.", msg);
 	}
-		
+
 	@Test
 	public void testCreerUnUtilisateur() {
-		fail("Not yet implemented");
+		String msg = PasserelleServicesWebXML.creerUnUtilisateur("jim", "email@gmail.com", "1122334455");
+		assertEquals("Erreur : pseudo trop court (8 car minimum) ou déjà existant.", msg);
+
+		msg = PasserelleServicesWebXML.creerUnUtilisateur("nouvelUser", "validemail@gmail.com", "1122334455");
+		assertEquals("Enregistrement effectué ; vous allez recevoir un courriel avec votre mot de passe.", msg);
 	}
-	
+
 	@Test
 	public void testSupprimerUnUtilisateur() {
-		fail("Not yet implemented");	
+		String msg = PasserelleServicesWebXML.supprimerUnUtilisateur("admin", Outils.sha1("mdpadmin"), "turlututu");
+		assertEquals("Suppression effectuée ; un courriel va être envoyé à l'utilisateur.", msg);
 	}
-	
+
 	@Test
 	public void testChangerDeMdp() {
-		fail("Not yet implemented");
-	}	
+		String msg = PasserelleServicesWebXML.changerDeMdp("europa", Outils.sha1("mdputilisateur"), "passepasse", "passepassepasse");
+		assertEquals("Erreur : le nouveau mot de passe et sa confirmation sont différents.", msg);
 
+		msg = PasserelleServicesWebXML.changerDeMdp("europa", Outils.sha1("mdputilisateur"), "mdputilisateur", "mdputilisateur");
+		assertEquals("Enregistrement effectué ; vous allez recevoir un courriel de confirmation.", msg);
+	}
 	@Test
 	public void testDemanderMdp() {
 		fail("Not yet implemented");

@@ -25,7 +25,7 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	// Adresse de l'hébergeur Internet
 	//private static String _adresseHebergeur = "http://sio.lyceedelasalle.fr/tracegps/api/";
 	// Adresse du localhost en cas d'exécution sur le poste de développement (projet de tests des classes)
-	private static String _adresseHebergeur = "http://127.0.0.1/ws-php-cartron/tracegps/api/";
+	private static String _adresseHebergeur = "http://127.0.0.1/ws-php-dp/TraceGPS/src/api/";
 
 	// Noms des services web déjà traités par la passerelle
 	private static String _urlArreterEnregistrementParcours = "ArreterEnregistrementParcours";
@@ -62,8 +62,15 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 			urlDuServiceWeb += "?pseudo=" + pseudo;
 			urlDuServiceWeb += "&mdp=" + mdpSha1;
 
+			System.out.println("URL: " + urlDuServiceWeb);
+
 			// création d'un flux en lecture (InputStream) à partir du service
 			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// Vérifie si le flux est nul
+			if (unFluxEnLecture == null) {
+				return "Erreur : Flux de lecture nul pour l'URL " + urlDuServiceWeb;
+			}
 
 			// création d'un objet org.w3c.dom.Document à partir du flux ; il servira à parcourir le flux XML
 			Document leDocument = getDocumentXML(unFluxEnLecture);
