@@ -3,6 +3,7 @@ package testunitaires;
 import static org.junit.Assert.*;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 
 import org.junit.Test;
 
@@ -100,17 +101,74 @@ public class PasserelleServiceWebXMLTest {
 
 	@Test
 	public void testDemarrerEnregistrementParcours() {
-		fail("Not yet implemented");
+		String pseudo = "europa";
+		String mdpSha1 = Outils.sha1("mdputilisateur");
+
+		// Cas 1 : Mauvais mot de passe
+		Trace laTrace = new Trace();
+		String msg = PasserelleServicesWebXML.demarrerEnregistrementParcours(pseudo, Outils.sha1("mauvaismdp"), laTrace);
+		assertEquals("Erreur : authentification incorrecte.", msg);
+
+		// Cas 2 : Bon mot de passe, vérification de la création
+		laTrace = new Trace();
+		msg = PasserelleServicesWebXML.demarrerEnregistrementParcours(pseudo, mdpSha1, laTrace);
+
+		// 🔍 Debugging : Vérifions ce que l'API retourne vraiment
+		System.out.println("Réponse API lors de la création du parcours : " + msg);
+
+		// Comparaison avec la valeur attendue
+		assertEquals("Trace créée.", msg);
+
+		// Vérification que la trace a bien un ID
+		int idTrace = laTrace.getId();
+		assertTrue(idTrace > 0);
+
+		// 🔍 Debugging : Vérifions l'ID récupéré
+		System.out.println("ID de la nouvelle trace : " + idTrace);
 	}
+
+
 
 	@Test
 	public void testArreterEnregistrementParcours() {
 		fail("Not yet implemented");
 	}
-	
+
 	@Test
-	public void testSupprimerUnUnParcours() {
-		fail("Not yet implemented");
+	public void testSupprimerUnParcours() {
+		String pseudo = "europa";
+		String mdpSha1 = Outils.sha1("mdputilisateur");
+
+		// Étape 1 : Créer un parcours fictif
+		Trace nouvelleTrace = new Trace();
+		String msg = PasserelleServicesWebXML.demarrerEnregistrementParcours(pseudo, mdpSha1, nouvelleTrace);
+
+		// 🔍 Debugging : Vérifions ce que l'API retourne vraiment
+		System.out.println("Réponse API lors de la création du parcours : " + msg);
+
+		System.out.println("🔍 Réponse brute de l'API : '" + msg + "'");
+
+		// Comparaison avec la valeur attendue
+		assertEquals("Trace créée.", msg);
+
+		// Vérification que la trace a bien un ID
+		int idTrace = nouvelleTrace.getId();
+		assertTrue(idTrace > 0);
+
+		// Étape 2 : Vérifier que le parcours existe bien avant suppression
+		ArrayList<Trace> lesTraces = new ArrayList<>();
+		msg = PasserelleServicesWebXML.getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
+		assertTrue(lesTraces.stream().anyMatch(trace -> trace.getId() == idTrace));
+
+		// Étape 3 : Supprimer le parcours
+		msg = PasserelleServicesWebXML.supprimerUnParcours(pseudo, mdpSha1, idTrace);
+		assertEquals("Parcours supprimé.", msg);
+
+		// Étape 4 : Vérifier que le parcours n'existe plus
+		lesTraces.clear();
+		msg = PasserelleServicesWebXML.getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
+		assertFalse(lesTraces.stream().anyMatch(trace -> trace.getId() == idTrace));
 	}
+
 	
 }
