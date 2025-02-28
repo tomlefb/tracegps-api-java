@@ -22,24 +22,61 @@ public abstract class PasserelleXML {
 
     // méthode protégée statique pour obtenir un flux en lecture (java.io.InputStream)
     // à partir de l'adresse d'un fichier ou de l'URL d'un service web
-	protected static InputStream getFluxEnLecture(String payload) {    InputStream unFluxEnLecture = null;    try {       if (payload.startsWith("http")) {          HttpURLConnection urlConnection = (HttpURLConnection) new URL(payload).openConnection();          int code = urlConnection.getResponseCode();          if (code == HttpURLConnection.HTTP_OK) {             unFluxEnLecture = urlConnection.getInputStream();          } else {             unFluxEnLecture = urlConnection.getErrorStream();          }       } else {          unFluxEnLecture = new FileInputStream(new File(payload));       }       return unFluxEnLecture;    } catch (Exception ex) {       System.out.println("Erreur dans getFluxEnLecture : " + ex.getMessage());       return null;    }}
+	protected static InputStream getFluxEnLecture(String payload) {
+		InputStream unFluxEnLecture = null;
+		try {
+			if (payload.startsWith("http")) {
+				HttpURLConnection urlConnection = (HttpURLConnection) new URL(payload).openConnection();
+				int code = urlConnection.getResponseCode();
+
+				System.out.println("HTTP Code : " + code); // ✅ Debug
+
+				if (code == HttpURLConnection.HTTP_OK || code == HttpURLConnection.HTTP_CREATED) { // 🔥 Accepter aussi 201
+					unFluxEnLecture = urlConnection.getInputStream();
+
+					// ✅ Ajout d'un affichage du contenu du flux
+					java.util.Scanner s = new java.util.Scanner(unFluxEnLecture).useDelimiter("\\A");
+					String response = s.hasNext() ? s.next() : "";
+					System.out.println("Réponse API : \n" + response);
+					s.close();
+
+					// On recrée un flux car `Scanner` consomme l'original
+					unFluxEnLecture = new java.io.ByteArrayInputStream(response.getBytes("UTF-8"));
+				} else {
+					unFluxEnLecture = urlConnection.getErrorStream();
+				}
+			} else {
+				unFluxEnLecture = new FileInputStream(new File(payload));
+			}
+			return unFluxEnLecture;
+		} catch (Exception ex) {
+			System.out.println("Erreur dans getFluxEnLecture : " + ex.getMessage());
+			return null;
+		}
+	}
 
     // méthode protégée statique pour obtenir document XML (org.w3c.dom.Document)
     // à partir d'un flux de données en lecture (java.io.InputStream)
-	protected static Document getDocumentXML(InputStream unFluxEnLecture)
-	{
-		try
-		{
-			// création d'une instance de DocumentBuilderFactory et DocumentBuilder
+	protected static Document getDocumentXML(InputStream unFluxEnLecture) {
+		try {
+			if (unFluxEnLecture == null) {
+				System.out.println("⚠️ Erreur : le flux XML est null !");
+				return null;
+			}
+
+			// Création d'une instance de DocumentBuilderFactory et DocumentBuilder
 			DocumentBuilderFactory leDBF = DocumentBuilderFactory.newInstance();
 			DocumentBuilder leDB = leDBF.newDocumentBuilder();
-	
-			// on crée un nouveau document XML avec en argument le flux XML
+
+			// On crée un nouveau document XML avec en argument le flux XML
 			Document leDocument = leDB.parse(unFluxEnLecture);
+
+			System.out.println("✅ Document XML bien analysé !");
 			return leDocument;
+		} catch (Exception ex) {
+			System.out.println("⚠️ Erreur dans getDocumentXML : " + ex.getMessage());
+			return null;
 		}
-		catch (Exception ex)
-		{	return null;
-		}	
 	}
+
 }

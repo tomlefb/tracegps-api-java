@@ -213,6 +213,9 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 			urlDuServiceWeb += "&mdp=" + mdpSha1;
 			urlDuServiceWeb += "&pseudoAsupprimer=" + pseudoAsupprimer;
 
+			System.out.println("URL: " + urlDuServiceWeb);
+
+
 			// création d'un flux en lecture (InputStream) à partir du service
 			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
 

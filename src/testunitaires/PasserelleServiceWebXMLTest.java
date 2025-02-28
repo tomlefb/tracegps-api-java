@@ -29,18 +29,47 @@ public class PasserelleServiceWebXMLTest {
 
 	@Test
 	public void testCreerUnUtilisateur() {
+		String pseudoTest = "nouvelUserTest";
+		String emailTest = "validemail@gmail.com";
+		String telTest = "1122334455";
+
+		// 1. Vérifier qu'un pseudo trop court ou existant ne fonctionne pas
 		String msg = PasserelleServicesWebXML.creerUnUtilisateur("jim", "email@gmail.com", "1122334455");
 		assertEquals("Erreur : pseudo trop court (8 car minimum) ou déjà existant.", msg);
 
-		msg = PasserelleServicesWebXML.creerUnUtilisateur("nouvelUser", "validemail@gmail.com", "1122334455");
+		// 2. Créer un utilisateur
+		msg = PasserelleServicesWebXML.creerUnUtilisateur(pseudoTest, emailTest, telTest);
 		assertEquals("Enregistrement effectué ; vous allez recevoir un courriel avec votre mot de passe.", msg);
+
+		// 3. Supprimer l'utilisateur juste après
+		msg = PasserelleServicesWebXML.supprimerUnUtilisateur("admin", Outils.sha1("mdpadmin"), pseudoTest);
+		assertEquals("Suppression effectuée ; un courriel va être envoyé à l'utilisateur.", msg);
 	}
 
 	@Test
 	public void testSupprimerUnUtilisateur() {
-		String msg = PasserelleServicesWebXML.supprimerUnUtilisateur("admin", Outils.sha1("mdpadmin"), "turlututu");
+		String pseudoTest = "utilisateurTest";
+		String emailTest = "utilisateurTest@gmail.com";
+		String telTest = "0606060606";
+
+		// 1. Construire l'URL manuellement et afficher
+		String urlCreation = "http://127.0.0.1/ws-php-dp/TraceGPS/src/api/CreerUnUtilisateur?pseudo=" + pseudoTest + "&adrMail=" + emailTest + "&numTel=" + telTest;
+		System.out.println("URL Création : " + urlCreation);
+
+		// 2. Essayer de créer l'utilisateur
+		String msg = PasserelleServicesWebXML.creerUnUtilisateur(pseudoTest, emailTest, telTest);
+		System.out.println("Réponse API Création : " + msg);
+		assertEquals("Enregistrement effectué ; vous allez recevoir un courriel avec votre mot de passe.", msg);
+
+		// 3. Supprimer l'utilisateur
+		String urlSuppression = "http://127.0.0.1/ws-php-dp/TraceGPS/src/api/SupprimerUnUtilisateur?pseudo=admin&mdp=" + Outils.sha1("mdpadmin") + "&pseudoAsupprimer=" + pseudoTest;
+		System.out.println("URL Suppression : " + urlSuppression);
+
+		msg = PasserelleServicesWebXML.supprimerUnUtilisateur("admin", Outils.sha1("mdpadmin"), pseudoTest);
+		System.out.println("Réponse API Suppression : " + msg);
 		assertEquals("Suppression effectuée ; un courriel va être envoyé à l'utilisateur.", msg);
 	}
+
 
 	@Test
 	public void testChangerDeMdp() {
