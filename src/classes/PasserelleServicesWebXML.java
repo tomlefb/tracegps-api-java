@@ -307,9 +307,40 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//   pseudoDestinataire : le pseudo de l'utilisateur à qui on demande l'autorisation
 	//   texteMessage : le texte d'un message accompagnant la demande
 	//   nomPrenom : le nom et le prénom du demandeur
-	public static String demanderUneAutorisation(String pseudo, String mdpSha1, String pseudoDestinataire, String texteMessage, String nomPrenom)
-	{
-		return "";				// METHODE A CREER ET TESTER
+	public static String demanderUneAutorisation(String pseudo, String mdpSha1, String pseudoDestinataire, String texteMessage, String nomPrenom) {
+		try {
+			if (pseudo.isEmpty() || mdpSha1.isEmpty() || pseudoDestinataire.isEmpty()) {
+				return "Erreur : données incomplètes.";
+			}
+
+			// Construire l'URL du service
+			String url = "https://serviceweb.com/demanderUneAutorisation"
+					+ "?pseudo=" + pseudo
+					+ "&mdp=" + mdpSha1
+					+ "&pseudoDestinataire=" + pseudoDestinataire
+					+ "&texteMessage=" + texteMessage
+					+ "&nomPrenom=" + nomPrenom;
+
+			// Envoyer la requête et récupérer la réponse sous forme de flux
+			InputStream flux = Outils.envoyerRequete(url);
+			if (flux == null) {
+				return "Erreur : impossible de contacter le service.";
+			}
+
+			// Analyser la réponse XML
+			Document document = Outils.parseXML(flux);
+			Element racine = document.getDocumentElement();
+			NodeList listeMessages = racine.getElementsByTagName("message");
+
+			if (listeMessages.getLength() > 0) {
+				return listeMessages.item(0).getTextContent();
+			} else {
+				return "Erreur : réponse invalide du service.";
+			}
+
+		} catch (Exception e) {
+			return "Erreur : " + e.getMessage();
+		}
 	}
 	
 	// Méthode statique pour retirer une autorisation (service RetirerUneAutorisation)
@@ -384,5 +415,6 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	{
 		return "";				// METHODE A CREER ET TESTER
 	}
+
 
 } // fin de la classe

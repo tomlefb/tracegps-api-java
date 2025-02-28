@@ -54,11 +54,23 @@ public class PasserelleServiceWebXMLTest {
 	public void testDemanderMdp() {
 		fail("Not yet implemented");
 	}
-	
+
 	@Test
 	public void testDemanderUneAutorisation() {
-		fail("Not yet implemented");	
-	}	
+		String msg = PasserelleServicesWebXML.demanderUneAutorisation("europa",
+				Outils.sha1("mdputilisateurrrrrr"), "toto", "", "");
+		assertEquals("Erreur : données incomplètes.", msg);
+		msg = PasserelleServicesWebXML.demanderUneAutorisation("europa", Outils.sha1("mdputilisateurrrrrr"),
+				"toto", "coucou", "charles-edouard");
+		assertEquals("Erreur : authentification incorrecte.", msg);
+		msg = PasserelleServicesWebXML.demanderUneAutorisation("europa", Outils.sha1("mdputilisateur"), "toto",
+				"coucou", "charles-edouard");
+		assertEquals("Erreur : pseudo utilisateur inexistant.", msg);
+		msg = PasserelleServicesWebXML.demanderUneAutorisation("europa", Outils.sha1("mdputilisateur"),
+				"galileo", "coucou", "charles-edouard");
+		assertEquals("galileo va recevoir un courriel avec votre demande.", msg);
+	}
+
 	
 	@Test
 	public void testRetirerUneAutorisation() {
