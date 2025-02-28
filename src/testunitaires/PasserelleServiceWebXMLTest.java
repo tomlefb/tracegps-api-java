@@ -70,7 +70,6 @@ public class PasserelleServiceWebXMLTest {
 		assertEquals("Suppression effectuée ; un courriel va être envoyé à l'utilisateur.", msg);
 	}
 
-
 	@Test
 	public void testChangerDeMdp() {
 		String msg = PasserelleServicesWebXML.changerDeMdp("europa", Outils.sha1("mdputilisateur"), "passepasse", "passepassepasse");
@@ -114,4 +113,4 @@ public class PasserelleServiceWebXMLTest {
 		fail("Not yet implemented");
 	}
 	
-} // fin du test
+}
