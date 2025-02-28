@@ -8,6 +8,7 @@
 
 package classes;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -16,6 +17,11 @@ import java.io.InputStream;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 public class PasserelleServicesWebXML extends PasserelleXML {
 
@@ -213,6 +219,9 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 			urlDuServiceWeb += "&mdp=" + mdpSha1;
 			urlDuServiceWeb += "&pseudoAsupprimer=" + pseudoAsupprimer;
 
+			System.out.println("URL: " + urlDuServiceWeb);
+
+
 			// création d'un flux en lecture (InputStream) à partir du service
 			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
 
@@ -339,11 +348,66 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    mdpSha1 : le mot de passe hashé en sha1
 	//    idTrace : l'id de la trace à consulter
 	//    laTrace : objet Trace (vide) à remplir à partir des données fournies par le service web
-	public static String getUnParcoursEtSesPoints(String pseudo, String mdpSha1, int idTrace, Trace laTrace)
-	{
-		return "";				// METHODE A CREER ET TESTER
+	public static String getUnParcoursEtSesPoints(String pseudo, String mdpSha1, int idTrace, Trace laTrace) {
+		String reponse = "";
+		try {
+			String urlDuServiceWeb = _adresseHebergeur + _urlGetUnParcoursEtSesPoints;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+			urlDuServiceWeb += "&idTrace=" + idTrace;
+
+			System.out.println("URL : " + urlDuServiceWeb);
+
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+			if (unFluxEnLecture == null) return "Erreur : Flux de lecture nul";
+
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+			if (leDocument == null) return "Erreur : Impossible d'analyser le document XML";
+
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// Vérification si la réponse contient une erreur
+			if (reponse.contains("Erreur")) return reponse;
+
+			Element donnees = (Element) leDocument.getElementsByTagName("donnees").item(0);
+			Element traceElement = (Element) donnees.getElementsByTagName("trace").item(0);
+
+			// Extraction des infos de la trace
+			int traceId = Integer.parseInt(traceElement.getElementsByTagName("id").item(0).getTextContent());
+			String dateHeureDebut = traceElement.getElementsByTagName("dateHeureDebut").item(0).getTextContent();
+			boolean terminee = traceElement.getElementsByTagName("terminee").getLength() > 0;
+			int idUtilisateur = Integer.parseInt(traceElement.getElementsByTagName("idUtilisateur").item(0).getTextContent());
+
+			laTrace.setId(traceId);
+			laTrace.setIdUtilisateur(idUtilisateur);
+			laTrace.setTerminee(terminee);
+			laTrace.setDateHeureDebut(Outils.convertirEnDate(dateHeureDebut, "yyyy-MM-dd HH:mm:ss"));
+
+			// Récupération des points
+			NodeList points = donnees.getElementsByTagName("point");
+			for (int i = 0; i < points.getLength(); i++) {
+				Element pointElement = (Element) points.item(i);
+
+				int id = Integer.parseInt(pointElement.getElementsByTagName("id").item(0).getTextContent());
+				double latitude = Double.parseDouble(pointElement.getElementsByTagName("latitude").item(0).getTextContent());
+				double longitude = Double.parseDouble(pointElement.getElementsByTagName("longitude").item(0).getTextContent());
+				double altitude = Double.parseDouble(pointElement.getElementsByTagName("altitude").item(0).getTextContent());
+				String dateHeure = pointElement.getElementsByTagName("dateHeure").item(0).getTextContent();
+				int rythmeCardio = Integer.parseInt(pointElement.getElementsByTagName("rythmeCardio").item(0).getTextContent());
+
+				PointDeTrace point = new PointDeTrace(traceId, id, latitude, longitude, altitude,
+						Outils.convertirEnDate(dateHeure, "yyyy-MM-dd HH:mm:ss"), rythmeCardio);
+
+				laTrace.ajouterPoint(point);
+			}
+
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
-	
+
 	// Méthode statique pour obtenir la liste des parcours d'un utilisateur (service GetLesParcoursDunUtilisateur)
 	// La méthode doit recevoir 4 paramètres :
 	//    pseudo : le pseudo de l'utilisateur qui fait appel au service web
@@ -352,7 +416,55 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    lesTraces : collection (vide) à remplir à partir des données fournies par le service web
 	public static String getLesParcoursDunUtilisateur(String pseudo, String mdpSha1, String pseudoConsulte, ArrayList<Trace> lesTraces)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+		try {
+			// Construire l'URL du service web
+			String urlDuServiceWeb = _adresseHebergeur + _urlGetLesParcoursDunUtilisateur;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+			urlDuServiceWeb += "&pseudoConsulte=" + pseudoConsulte;
+
+			System.out.println("URL : " + urlDuServiceWeb);
+
+			// Obtenir le flux XML
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+			if (unFluxEnLecture == null) {
+				return "Erreur : Flux de lecture nul pour l'URL " + urlDuServiceWeb;
+			}
+
+			// Parser le document XML
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// Vérifier si la réponse contient une erreur
+			if (reponse.startsWith("Erreur")) {
+				return reponse;
+			}
+
+			// Vider la liste avant de la remplir
+			lesTraces.clear();
+
+			// Extraire la liste des parcours
+			NodeList listeNoeudsTraces = leDocument.getElementsByTagName("trace");
+			for (int i = 0; i < listeNoeudsTraces.getLength(); i++) {
+				Element courant = (Element) listeNoeudsTraces.item(i);
+
+				int unId = Integer.parseInt(courant.getElementsByTagName("id").item(0).getTextContent());
+				Date uneDateHeureDebut = Outils.convertirEnDate(courant.getElementsByTagName("dateHeureDebut").item(0).getTextContent(), formatDateUS);
+				boolean terminee = courant.getElementsByTagName("terminee").item(0).getTextContent().equals("1");
+				Date uneDateHeureFin = terminee ? Outils.convertirEnDate(courant.getElementsByTagName("dateHeureFin").item(0).getTextContent(), formatDateUS) : null;
+				int unIdUtilisateur = Integer.parseInt(courant.getElementsByTagName("idUtilisateur").item(0).getTextContent());
+				double uneDistance = Double.parseDouble(courant.getElementsByTagName("distance").item(0).getTextContent());
+
+				Trace uneTrace = new Trace(unId, uneDateHeureDebut, uneDateHeureFin, terminee, unIdUtilisateur, uneDistance);
+				lesTraces.add(uneTrace);
+			}
+
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
 	
 	// Méthode statique pour supprimer un parcours (service SupprimerUnParcours)
@@ -360,10 +472,39 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//   pseudo : le pseudo de l'utilisateur qui fait appel au service web
 	//   mdpSha1 : le mot de passe hashé en sha1
 	//   idTrace : l'id de la trace à supprimer
-	public static String supprimerUnParcours(String pseudo, String mdpSha1, int idTrace)
-	{
-		return "";				// METHODE A CREER ET TESTER
+	public static String supprimerUnParcours(String pseudo, String mdpSha1, int idTrace) {
+		String reponse = "";
+		try {
+			// Création de l'URL du service web avec les paramètres
+			String urlDuServiceWeb = _adresseHebergeur + _urlSupprimerUnParcours;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+			urlDuServiceWeb += "&idTrace=" + idTrace;
+
+			System.out.println("URL: " + urlDuServiceWeb);
+
+			// Création d'un flux en lecture (InputStream) à partir du service
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// Vérifie si le flux est nul
+			if (unFluxEnLecture == null) {
+				return "Erreur : Flux de lecture nul pour l'URL " + urlDuServiceWeb;
+			}
+
+			// Création d'un objet Document XML à partir du flux
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+
+			// Parsing du XML
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// Retourne la réponse du service web
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
+
 	
 	// Méthode statique pour démarrer l'enregistrement d'un parcours (service DemarrerEnregistrementParcours)
 	// La méthode doit recevoir 3 paramètres :
@@ -372,17 +513,127 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    laTrace : un objet Trace (vide) à remplir à partir des données fournies par le service web
 	public static String demarrerEnregistrementParcours(String pseudo, String mdpSha1, Trace laTrace)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+		try
+		{
+			// Construction de l'URL avec les paramètres
+			String urlDuServiceWeb = _adresseHebergeur + _urlDemarrerEnregistrementParcours;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+
+			// Debug : Vérifions l'URL générée
+			System.out.println("URL DemarrerEnregistrementParcours : " + urlDuServiceWeb);
+
+			// Appel du service web
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// Vérifier si l'API n'a pas répondu
+			if (unFluxEnLecture == null) {
+				return "Erreur : Flux de lecture nul pour l'URL " + urlDuServiceWeb;
+			}
+
+			// 📄 Parsing du XML
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+
+			// 🔍 Debug : Vérifions le contenu du XML brut
+			System.out.println("XML Reçu : " + convertirDocumentEnString(leDocument));
+
+			// Extraction de la réponse
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// Si l'API a bien créé une trace, extraire son ID et le remplir dans `laTrace`
+			if (reponse.equals("Trace créée.")) {
+				Element traceElement = (Element) leDocument.getElementsByTagName("trace").item(0);
+				int idTrace = Integer.parseInt(traceElement.getElementsByTagName("id").item(0).getTextContent());
+				laTrace.setId(idTrace);
+			}
+
+			// 🔍 Debug : Vérifions ce qui a été extrait
+			System.out.println("Réponse API : " + reponse);
+			System.out.println("ID de la trace créée : " + laTrace.getId());
+
+			return reponse;
+		}
+		catch (Exception ex)
+		{
+			return "Erreur : " + ex.getMessage();
+		}
 	}
+
 		
 	// Méthode statique pour terminer l'enregistrement d'un parcours (service ArreterEnregistrementParcours)
 	// La méthode doit recevoir 3 paramètres :
 	//    pseudo : le pseudo de l'utilisateur qui fait appel au service web
 	//    mdpSha1 : le mot de passe hashé en sha1
 	//    idTrace : l'id de la trace à terminer
-	public static String arreterEnregistrementParcours(String pseudo, String mdpSha1, int idTrace)
-	{
-		return "";				// METHODE A CREER ET TESTER
+	public static String arreterEnregistrementParcours(String pseudo, String mdpSha1, int idTrace) {
+		String reponse = "";
+		try {
+			// Construire l'URL pour appeler le service web
+			String url = _adresseHebergeur + _urlArreterEnregistrementParcours
+					+ "?pseudo=" + pseudo
+					+ "&mdp=" + mdpSha1
+					+ "&idTrace=" + idTrace;
+
+			// Debugging : Affichage de l'URL appelée
+			System.out.println("URL ArreterEnregistrementParcours : " + url);
+
+			// Exécution de la requête et récupération du flux XML
+			InputStream fluxXML = getFluxEnLecture(url);
+			if (fluxXML == null) return "Erreur : Impossible d'obtenir la réponse du serveur.";
+
+			// Analyse de la réponse XML
+			Document doc = getDocumentXML(fluxXML);
+			if (doc == null) return "Erreur : Impossible d'analyser la réponse XML.";
+
+			// Debugging : Affichage du XML reçu
+			System.out.println("XML Reçu : " + convertirDocumentEnString(doc));
+
+			// Récupération de la réponse API
+			Element racine = (Element) doc.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// Debugging : Vérifions la réponse extraite
+			System.out.println("Réponse API : " + reponse);
+
+			// Vérifier si l'arrêt a bien été enregistré
+			if (reponse.equals("Enregistrement terminé.")) {
+				// Vérifier dans la liste des parcours que la trace est bien terminée
+				ArrayList<Trace> lesTraces = new ArrayList<>();
+				getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
+
+				for (Trace trace : lesTraces) {
+					if (trace.getId() == idTrace) {
+						boolean terminee = trace.getTerminee(); //Vérification correcte
+						System.out.println("Trace ID: " + idTrace + ", Terminée: " + terminee);
+						if (!terminee) {
+							return "Erreur : La trace n'a pas été correctement terminée.";
+						}
+					}
+				}
+			}
+
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
+	}
+
+
+
+
+
+	//méthode de test
+	private static String convertirDocumentEnString(Document doc) {
+		try {
+			Transformer transformer = TransformerFactory.newInstance().newTransformer();
+			StringWriter writer = new StringWriter();
+			transformer.transform(new DOMSource(doc), new StreamResult(writer));
+			return writer.getBuffer().toString();
+		} catch (Exception e) {
+			return "Erreur lors de la conversion XML en String : " + e.getMessage();
+		}
 	}
 
 } // fin de la classe
