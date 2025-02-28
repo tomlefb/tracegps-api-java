@@ -25,7 +25,7 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	// Adresse de l'hébergeur Internet
 	//private static String _adresseHebergeur = "http://sio.lyceedelasalle.fr/tracegps/api/";
 	// Adresse du localhost en cas d'exécution sur le poste de développement (projet de tests des classes)
-	private static String _adresseHebergeur = "http://127.0.0.1/ws-php-dp/TraceGPS/src/api/";
+	private static String _adresseHebergeur = "http://127.0.0.1/ws-php-nd/tracegps-commun/version_clean/Atelier-de-professionnalisation-TraceGPS/src/api/";
 
 	// Noms des services web déjà traités par la passerelle
 	private static String _urlArreterEnregistrementParcours = "ArreterEnregistrementParcours";
@@ -307,42 +307,43 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//   pseudoDestinataire : le pseudo de l'utilisateur à qui on demande l'autorisation
 	//   texteMessage : le texte d'un message accompagnant la demande
 	//   nomPrenom : le nom et le prénom du demandeur
-	public static String demanderUneAutorisation(String pseudo, String mdpSha1, String pseudoDestinataire, String texteMessage, String nomPrenom) {
+	public static String demanderUneAutorisation(
+			String pseudo,
+			String mdpSha1,
+			String pseudoDestinataire,
+			String texteMessage,
+			String nomPrenom
+	) {
+		String reponse = "";
+
 		try {
-			if (pseudo.isEmpty() || mdpSha1.isEmpty() || pseudoDestinataire.isEmpty()) {
-				return "Erreur : données incomplètes.";
-			}
+			String urlDuServiceWeb = _adresseHebergeur + _urlDemanderUneAutorisation;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+			urlDuServiceWeb += "&pseudoDestinataire=" + pseudoDestinataire;
+			urlDuServiceWeb += "&texteMessage=" + texteMessage;
+			urlDuServiceWeb += "&nomPrenom=" + nomPrenom;
 
-			// Construire l'URL du service
-			String url = "https://serviceweb.com/demanderUneAutorisation"
-					+ "?pseudo=" + pseudo
-					+ "&mdp=" + mdpSha1
-					+ "&pseudoDestinataire=" + pseudoDestinataire
-					+ "&texteMessage=" + texteMessage
-					+ "&nomPrenom=" + nomPrenom;
+			// Création d'un flux en lecture (InputStream) à partir du service
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
 
-			// Envoyer la requête et récupérer la réponse sous forme de flux
-			InputStream flux = Outils.envoyerRequete(url);
-			if (flux == null) {
-				return "Erreur : impossible de contacter le service.";
-			}
+			// Création d'un objet org.w3c.dom.Document à partir du flux
+			// Il servira à parcourir le flux XML
+			Document leDocument = getDocumentXML(unFluxEnLecture);
 
-			// Analyser la réponse XML
-			Document document = Outils.parseXML(flux);
-			Element racine = document.getDocumentElement();
-			NodeList listeMessages = racine.getElementsByTagName("message");
+			// Parsing du flux XML
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
 
-			if (listeMessages.getLength() > 0) {
-				return listeMessages.item(0).getTextContent();
-			} else {
-				return "Erreur : réponse invalide du service.";
-			}
-
-		} catch (Exception e) {
-			return "Erreur : " + e.getMessage();
+			return reponse;
+		}
+		catch (Exception ex) {
+			String msg = "Erreur : " + ex.getMessage();
+			return msg;
 		}
 	}
-	
+
+
 	// Méthode statique pour retirer une autorisation (service RetirerUneAutorisation)
 	// La méthode doit recevoir 4 paramètres :
 	//   pseudo : le pseudo de l'utilisateur qui fait appel au service web
