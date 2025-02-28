@@ -37,14 +37,14 @@ public class TestPasserelleServicesWebXML {
 //		}
 
 
-//		// Test visuel de la méthode getUnParcoursEtSesPoints
-//		System.out.println("=== Test getUnParcoursEtSesPoints ===");
-//		Trace laTrace = new Trace();
-//		msg = PasserelleServicesWebXML.getUnParcoursEtSesPoints("europa", Outils.sha1("mdputilisateur"), 4, laTrace);
-//		// Affichage de la réponse
-//		System.out.println("Réponse API : " + msg);
-//		// Affichage de la trace récupérée
-//		System.out.println("Détails de la trace :\n" + laTrace.toString());
+		// Test visuel de la méthode getUnParcoursEtSesPoints
+		System.out.println("=== Test getUnParcoursEtSesPoints ===");
+		Trace laTrace = new Trace();
+		msg = PasserelleServicesWebXML.getUnParcoursEtSesPoints("europa", Outils.sha1("mdputilisateur"), 4, laTrace);
+		// Affichage de la réponse
+		System.out.println("Réponse API : " + msg);
+		// Affichage de la trace récupérée
+		System.out.println("Détails de la trace :\n" + laTrace.toString());
 
 
 	}// fin Main

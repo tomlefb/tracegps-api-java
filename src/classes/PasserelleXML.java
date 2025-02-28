@@ -29,12 +29,12 @@ public abstract class PasserelleXML {
 				HttpURLConnection urlConnection = (HttpURLConnection) new URL(payload).openConnection();
 				int code = urlConnection.getResponseCode();
 
-				System.out.println("HTTP Code : " + code); // ✅ Debug
+				System.out.println("HTTP Code : " + code); // Debug
 
 				if (code == HttpURLConnection.HTTP_OK || code == HttpURLConnection.HTTP_CREATED) { // 🔥 Accepter aussi 201
 					unFluxEnLecture = urlConnection.getInputStream();
 
-					// ✅ Ajout d'un affichage du contenu du flux
+					// Ajout d'un affichage du contenu du flux
 					java.util.Scanner s = new java.util.Scanner(unFluxEnLecture).useDelimiter("\\A");
 					String response = s.hasNext() ? s.next() : "";
 					System.out.println("Réponse API : \n" + response);
@@ -60,7 +60,7 @@ public abstract class PasserelleXML {
 	protected static Document getDocumentXML(InputStream unFluxEnLecture) {
 		try {
 			if (unFluxEnLecture == null) {
-				System.out.println("⚠️ Erreur : le flux XML est null !");
+				System.out.println("Erreur : le flux XML est null !");
 				return null;
 			}
 
@@ -71,10 +71,10 @@ public abstract class PasserelleXML {
 			// On crée un nouveau document XML avec en argument le flux XML
 			Document leDocument = leDB.parse(unFluxEnLecture);
 
-			System.out.println("✅ Document XML bien analysé !");
+			System.out.println("Document XML bien analysé !");
 			return leDocument;
 		} catch (Exception ex) {
-			System.out.println("⚠️ Erreur dans getDocumentXML : " + ex.getMessage());
+			System.out.println("Erreur dans getDocumentXML : " + ex.getMessage());
 			return null;
 		}
 	}

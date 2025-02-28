@@ -567,10 +567,59 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    pseudo : le pseudo de l'utilisateur qui fait appel au service web
 	//    mdpSha1 : le mot de passe hashé en sha1
 	//    idTrace : l'id de la trace à terminer
-	public static String arreterEnregistrementParcours(String pseudo, String mdpSha1, int idTrace)
-	{
-		return "";				// METHODE A CREER ET TESTER
+	public static String arreterEnregistrementParcours(String pseudo, String mdpSha1, int idTrace) {
+		String reponse = "";
+		try {
+			// Construire l'URL pour appeler le service web
+			String url = _adresseHebergeur + _urlArreterEnregistrementParcours
+					+ "?pseudo=" + pseudo
+					+ "&mdp=" + mdpSha1
+					+ "&idTrace=" + idTrace;
+
+			// Debugging : Affichage de l'URL appelée
+			System.out.println("URL ArreterEnregistrementParcours : " + url);
+
+			// Exécution de la requête et récupération du flux XML
+			InputStream fluxXML = getFluxEnLecture(url);
+			if (fluxXML == null) return "Erreur : Impossible d'obtenir la réponse du serveur.";
+
+			// Analyse de la réponse XML
+			Document doc = getDocumentXML(fluxXML);
+			if (doc == null) return "Erreur : Impossible d'analyser la réponse XML.";
+
+			// Debugging : Affichage du XML reçu
+			System.out.println("XML Reçu : " + convertirDocumentEnString(doc));
+
+			// Récupération de la réponse API
+			Element racine = (Element) doc.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// Debugging : Vérifions la réponse extraite
+			System.out.println("Réponse API : " + reponse);
+
+			// Vérifier si l'arrêt a bien été enregistré
+			if (reponse.equals("Enregistrement terminé.")) {
+				// Vérifier dans la liste des parcours que la trace est bien terminée
+				ArrayList<Trace> lesTraces = new ArrayList<>();
+				getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
+
+				for (Trace trace : lesTraces) {
+					if (trace.getId() == idTrace) {
+						boolean terminee = trace.getTerminee(); //Vérification correcte
+						System.out.println("Trace ID: " + idTrace + ", Terminée: " + terminee);
+						if (!terminee) {
+							return "Erreur : La trace n'a pas été correctement terminée.";
+						}
+					}
+				}
+			}
+
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
+
 
 
 

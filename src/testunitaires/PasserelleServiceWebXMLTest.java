@@ -130,9 +130,47 @@ public class PasserelleServiceWebXMLTest {
 
 
 	@Test
-	public void testArreterEnregistrementParcours() {
-		fail("Not yet implemented");
+	public void testArreterEnregistrementParcours() throws InterruptedException {
+		String pseudo = "europa";
+		String mdpSha1 = Outils.sha1("mdputilisateur");
+
+		// Étape 1 : Créer un parcours fictif
+		Trace laTrace = new Trace();
+		String msg = PasserelleServicesWebXML.demarrerEnregistrementParcours(pseudo, mdpSha1, laTrace);
+
+		System.out.println("Réponse API lors de la création du parcours : " + msg);
+		assertEquals("Trace créée.", msg);
+
+		int idTrace = laTrace.getId();
+		assertTrue(idTrace > 0);
+
+		// Étape 2 : Vérifier que la trace est bien en cours
+		ArrayList<Trace> lesTraces = new ArrayList<>();
+		msg = PasserelleServicesWebXML.getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
+		assertTrue(lesTraces.stream().anyMatch(trace -> trace.getId() == idTrace && !trace.getTerminee()));
+
+		// Étape 3 : Arrêter l'enregistrement du parcours
+		msg = PasserelleServicesWebXML.arreterEnregistrementParcours(pseudo, mdpSha1, idTrace);
+		assertEquals("Enregistrement terminé.", msg);
+
+		// 🚀 Attendre un peu pour laisser le serveur enregistrer la mise à jour
+		Thread.sleep(1000);
+
+		// Étape 4 : Vérifier que la trace est bien terminée
+		lesTraces.clear();
+		msg = PasserelleServicesWebXML.getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
+
+		// 🔍 Debugging : Affichage des traces après arrêt
+		System.out.println("Traces après arrêt :");
+		for (Trace t : lesTraces) {
+			System.out.println("ID: " + t.getId() + ", Terminée: " + t.getTerminee());
+		}
+
+		assertTrue(lesTraces.stream().anyMatch(trace -> trace.getId() == idTrace && trace.getTerminee()));
+
+		System.out.println("✅ Test terminé avec succès : la trace " + idTrace + " a bien été arrêtée.");
 	}
+
 
 	@Test
 	public void testSupprimerUnParcours() {
