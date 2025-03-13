@@ -6,7 +6,7 @@ import classes.PasserellePWX;
 import classes.PasserelleTCX;
 import classes.Trace;
 
-public class TestPasserelleFichierXML {
+public class   TestPasserelleFichierXML {
 
 	public static void main(String[] args) {
         // test des passerelles

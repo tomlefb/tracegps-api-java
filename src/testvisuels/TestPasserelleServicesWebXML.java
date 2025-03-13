@@ -1,6 +1,7 @@
 package testvisuels;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 
 import classes.Outils;
 import classes.PasserelleServicesWebXML;
@@ -18,6 +19,7 @@ public class TestPasserelleServicesWebXML {
 
 
 		// test visuel de la méthode getLesUtilisateursQueJautorise
+
 
 
 		// test visuel de la méthode getLesUtilisateursQuiMautorisent

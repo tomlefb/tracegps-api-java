@@ -19,10 +19,8 @@ public class PasserelleServiceWebXMLTest {
 	public void testConnecter() {
 		String msg = PasserelleServicesWebXML.connecter("admin", "adminnnnnnnn");
 		assertEquals("Erreur : authentification incorrecte.", msg);
-
 		msg = PasserelleServicesWebXML.connecter("admin", Outils.sha1("mdpadmin"));
 		assertEquals("Administrateur authentifié.", msg);
-
 		msg = PasserelleServicesWebXML.connecter("europa", Outils.sha1("mdputilisateur"));
 		assertEquals("Utilisateur authentifié.", msg);
 	}
@@ -52,9 +50,12 @@ public class PasserelleServiceWebXMLTest {
 	}
 	@Test
 	public void testDemanderMdp() {
-		fail("Not yet implemented");
+		String msg = PasserelleServicesWebXML.demanderMdp("jim");
+		assertEquals("Erreur : pseudo inexistant.", msg);
+		msg = PasserelleServicesWebXML.demanderMdp("europa");
+		assertEquals("Vous allez recevoir un courriel avec votre nouveau mot de passe.", msg);
 	}
-	
+
 	@Test
 	public void testDemanderUneAutorisation() {
 		fail("Not yet implemented");	
