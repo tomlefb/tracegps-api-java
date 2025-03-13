@@ -1,0 +1,14 @@
+{
+  "name": "vendor_name/classes",
+  "description": "description",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "doelsch.n",
+      "email": "email@example.com"
+    }
+  ],
+  "require": {
+  }
+}

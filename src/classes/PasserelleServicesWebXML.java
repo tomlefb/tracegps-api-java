@@ -307,13 +307,8 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//   pseudoDestinataire : le pseudo de l'utilisateur à qui on demande l'autorisation
 	//   texteMessage : le texte d'un message accompagnant la demande
 	//   nomPrenom : le nom et le prénom du demandeur
-	public static String demanderUneAutorisation(
-			String pseudo,
-			String mdpSha1,
-			String pseudoDestinataire,
-			String texteMessage,
-			String nomPrenom
-	) {
+	public static String demanderUneAutorisation(String pseudo, String mdpSha1, String pseudoDestinataire, String texteMessage, String nomPrenom)
+	{
 		String reponse = "";
 
 		try {
@@ -324,6 +319,7 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 			urlDuServiceWeb += "&texteMessage=" + texteMessage;
 			urlDuServiceWeb += "&nomPrenom=" + nomPrenom;
 
+			System.out.println(urlDuServiceWeb);
 			// Création d'un flux en lecture (InputStream) à partir du service
 			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
 
@@ -352,9 +348,35 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//   texteMessage : le texte d'un message pour un éventuel envoi de courriel
 	public static String retirerUneAutorisation(String pseudo, String mdpSha1, String pseudoARetirer, String texteMessage)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+
+		try {
+			String urlDuServiceWeb = _adresseHebergeur + _urlRetirerUneAutorisation;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+			urlDuServiceWeb += "&pseudoARetirer=" + pseudoARetirer;
+			urlDuServiceWeb += "&texteMessage=" + texteMessage;
+
+			System.out.println(urlDuServiceWeb);
+			// Création d'un flux en lecture (InputStream) à partir du service
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// Création d'un objet org.w3c.dom.Document à partir du flux
+			// Il servira à parcourir le flux XML
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+
+			// Parsing du flux XML
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			return reponse;
+		}
+		catch (Exception ex) {
+			String msg = "Erreur : " + ex.getMessage();
+			return msg;
+		}
 	}
-	
+
 	// Méhode statique pour envoyer la position de l'utilisateur (service EnvoyerPosition)
 	// La méthode doit recevoir 3 paramètres :
 	//    pseudo : le pseudo de l'utilisateur qui fait appel au service web
@@ -362,9 +384,54 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    lePoint : un objet PointDeTrace (vide) qui permettra de récupérer le numéro attribué à partir des données fournies par le service web
 	public static String envoyerPosition(String pseudo, String mdpSha1, PointDeTrace lePoint)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+
+		try {
+// Crée une URL pour envoyer les informations de localisation
+			String urlDuServiceWeb = _adresseHebergeur + _urlEnvoyerPosition;
+
+// Ajoute le pseudo à l'URL
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+
+// Ajoute le mot de passe haché (en SHA1) à l'URL
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+
+// Ajoute l'ID de la trace à l'URL
+			urlDuServiceWeb += "&idTrace=" + lePoint.getIdTrace();
+
+// Ajoute la date et l'heure de l'enregistrement, en enlevant l'espace entre la date et l'heure
+			urlDuServiceWeb += "&dateHeure=" + lePoint.getDateHeure().toString().replace(" ", "");
+
+// Ajoute la latitude à l'URL
+			urlDuServiceWeb += "&latitude=" + lePoint.getLatitude();
+
+// Ajoute la longitude à l'URL
+			urlDuServiceWeb += "&longitude=" + lePoint.getLongitude();
+
+// Ajoute l'altitude à l'URL
+			urlDuServiceWeb += "&altitude=" + lePoint.getAltitude();
+
+
+			System.out.println(urlDuServiceWeb);
+			// Création d'un flux en lecture (InputStream) à partir du service
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// Création d'un objet org.w3c.dom.Document à partir du flux
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+
+			// Parsing du flux XML
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			return reponse;
+		}
+		catch (Exception ex) {
+			String msg = "Erreur : " + ex.getMessage();
+			return msg;
+		}
 	}
-	
+
+
 	// Méthode statique pour obtenir un parcours et la liste de ses points (service GetUnParcoursEtSesPoints)
 	// La méthode doit recevoir 4 paramètres :
 	//    pseudo : le pseudo de l'utilisateur qui fait appel au service web
