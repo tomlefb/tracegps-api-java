@@ -316,7 +316,6 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 			String urlDuServiceWeb = _adresseHebergeur + _urlGetLesUtilisateursQueJautorise;
 			urlDuServiceWeb += "?pseudo=" + pseudo;
 			urlDuServiceWeb += "&mdp=" + mdpSha1;
-			urlDuServiceWeb += "lesUtilisateurs"
 
 			// création d'un flux en lecture (InputStream) à partir du service
 			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
@@ -326,37 +325,7 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 
 			// parsing du flux XML
 			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
-			String codeRetour = racine.getElementsByTagName("code").item(0).getTextContent();
-			reponse = racine.getElementsByTagName("message").item(0).getTextContent();
-
-			// Si le code retour est "200", c'est que le traitement s'est bien déroulé
-			if (codeRetour.equals("200"))
-			{
-				// Récupération de la liste des utilisateurs
-				NodeList listeUtilisateurs = racine.getElementsByTagName("utilisateur");
-
-				// Parcours des données XML pour créer les objets Utilisateur
-				for (int i = 0; i < listeUtilisateurs.getLength(); i++)
-				{
-					Element unUtilisateurXml = (Element) listeUtilisateurs.item(i);
-
-					// Création d'un objet Utilisateur à partir des données XML
-					String id = unUtilisateurXml.getElementsByTagName("id").item(0).getTextContent();
-					String unPseudo = unUtilisateurXml.getElementsByTagName("pseudo").item(0).getTextContent();
-					String unMdpSha1 = unUtilisateurXml.getElementsByTagName("mdp").item(0).getTextContent();
-					String adrMail = unUtilisateurXml.getElementsByTagName("adrMail").item(0).getTextContent();
-					String numTel = unUtilisateurXml.getElementsByTagName("numTel").item(0).getTextContent();
-					String niveau = unUtilisateurXml.getElementsByTagName("niveau").item(0).getTextContent();
-					String dateCreation = unUtilisateurXml.getElementsByTagName("dateCreation").item(0).getTextContent();
-					String nbTraces = unUtilisateurXml.getElementsByTagName("nbTraces").item(0).getTextContent();
-					String dateDerniereTrace = unUtilisateurXml.getElementsByTagName("dateDerniereTrace").item(0).getTextContent();
-
-					Utilisateur unUtilisateur = new Utilisateur(id, unPseudo, unMdpSha1, adrMail, numTel, niveau, dateCreation, nbTraces, dateDerniereTrace);
-
-					// Ajout de l'utilisateur à la collection lesUtilisateurs
-					lesUtilisateurs.add(unUtilisateur);
-				}
-			}
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
 
 			// retour de la réponse du service web
 			return reponse;
@@ -374,7 +343,30 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    lesUtilisateurs : collection (vide) à remplir à partir des données fournies par le service web
 	public static String getLesUtilisateursQuiMautorisent(String pseudo, String mdpSha1, ArrayList<Utilisateur> lesUtilisateurs)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+		try
+		{	// création d'un nouveau document XML à partir de l'URL du service web et des paramètres
+			String urlDuServiceWeb = _adresseHebergeur + _urlGetLesUtilisateursQuiMautorisent;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+
+			// création d'un flux en lecture (InputStream) à partir du service
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// création d'un objet org.w3c.dom.Document à partir du flux ; il servira à parcourir le flux XML
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+
+			// parsing du flux XML
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// retour de la réponse du service web
+			return reponse;
+		}
+		catch (Exception ex)
+		{	String msg = "Erreur : " + ex.getMessage();
+			return msg;
+		}
 	}
 
 	// Méthode statique pour demander une autorisation (service DemanderUneAutorisation)
