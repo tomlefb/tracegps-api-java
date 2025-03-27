@@ -37,7 +37,6 @@ public abstract class PasserelleXML {
 					// Ajout d'un affichage du contenu du flux
 					java.util.Scanner s = new java.util.Scanner(unFluxEnLecture).useDelimiter("\\A");
 					String response = s.hasNext() ? s.next() : "";
-					System.out.println("Réponse API : \n" + response);
 					s.close();
 
 					// On recrée un flux car `Scanner` consomme l'original
