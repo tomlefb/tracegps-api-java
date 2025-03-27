@@ -108,6 +108,7 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 			urlDuServiceWeb += "?pseudo=" + pseudo;
 			urlDuServiceWeb += "&mdp=" + mdpSha1;
 
+			System.out.println("URL: " + urlDuServiceWeb);
 			// création d'un flux en lecture (InputStream) à partir du service
 			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
 
@@ -284,9 +285,33 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	// Méthode statique pour demander un nouveau mot de passe (service DemanderMdp)
 	// La méthode doit recevoir 1 paramètre :
 	//    pseudo : le pseudo de l'utilisateur
-	public static String demanderMdp(String pseudo)
-	{
-		return "";				// METHODE A CREER ET TESTER
+	public static String demanderMdp(String pseudo) {
+		String reponse = "";
+		try {
+			// Création de l'URL du service web avec les paramètres
+			String urlDuServiceWeb = _adresseHebergeur + _urlDemanderMdp;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+
+			// Création d'un flux en lecture (InputStream) à partir du service
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// Vérifie si le flux est nul
+			if (unFluxEnLecture == null) {
+				return "Erreur : Flux de lecture nul pour l'URL " + urlDuServiceWeb;
+			}
+
+			// Création d'un objet org.w3c.dom.Document à partir du flux
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+
+			// Parsing du flux XML
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// Retour de la réponse du service web
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
 	
 	// Méthode statique pour obtenir la liste des utilisateurs que j'autorise (service GetLesUtilisateursQueJautorise)
@@ -294,9 +319,67 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    pseudo : le pseudo de l'utilisateur qui fait appel au service web
 	//    mdpSha1 : le mot de passe hashé en sha1
 	//    lesUtilisateurs : collection (vide) à remplir à partir des données fournies par le service web
-	public static String getLesUtilisateursQueJautorise(String pseudo, String mdpSha1, ArrayList<Utilisateur> lesUtilisateurs)
-	{
-		return "";				// METHODE A CREER ET TESTER
+	public static String getLesUtilisateursQueJautorise(String pseudo, String mdpSha1, ArrayList<Utilisateur> lesUtilisateurs) {
+		String reponse = "";
+		try {
+			// Construction de l'URL du service web avec les paramètres
+			String urlDuServiceWeb = _adresseHebergeur + _urlGetLesUtilisateursQueJautorise;
+			urlDuServiceWeb += "?pseudo=" + pseudo;
+			urlDuServiceWeb += "&mdp=" + mdpSha1;
+
+			// Création d'un flux en lecture (InputStream) à partir du service
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// Vérifie si le flux est nul
+			if (unFluxEnLecture == null) {
+				return "Erreur : Flux de lecture nul pour l'URL " + urlDuServiceWeb;
+			}
+
+			// Création d'un objet org.w3c.dom.Document à partir du flux
+			Document leDocument = getDocumentXML(unFluxEnLecture);
+
+			// Parsing du flux XML
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			// Vérifie si la réponse contient une erreur
+			if (reponse.startsWith("Erreur")) {
+				return reponse;
+			}
+
+			// Vider la collection avant de la remplir
+			lesUtilisateurs.clear();
+
+			// Récupération de la liste des utilisateurs autorisés
+			NodeList listeNoeudsUtilisateurs = leDocument.getElementsByTagName("utilisateur");
+			for (int i = 0; i < listeNoeudsUtilisateurs.getLength(); i++) {
+				Element courant = (Element) listeNoeudsUtilisateurs.item(i);
+
+				// Lecture des balises
+				int unId = Integer.parseInt(courant.getElementsByTagName("id").item(0).getTextContent());
+				String unPseudo = courant.getElementsByTagName("pseudo").item(0).getTextContent();
+				String unMdpSha1 = "";  // Sécurité, on ne récupère pas le mot de passe
+				String uneAdrMail = courant.getElementsByTagName("adrMail").item(0).getTextContent();
+				String unNumTel = courant.getElementsByTagName("numTel").item(0).getTextContent();
+				int unNiveau = Integer.parseInt(courant.getElementsByTagName("niveau").item(0).getTextContent());
+				Date uneDateCreation = Outils.convertirEnDate(courant.getElementsByTagName("dateCreation").item(0).getTextContent(), formatDateUS);
+				int unNbTraces = Integer.parseInt(courant.getElementsByTagName("nbTraces").item(0).getTextContent());
+				Date uneDateDerniereTrace = null;
+				if (unNbTraces > 0) {
+					uneDateDerniereTrace = Outils.convertirEnDate(courant.getElementsByTagName("dateDerniereTrace").item(0).getTextContent(), formatDateUS);
+				}
+
+				// Création d'un objet Utilisateur
+				Utilisateur unUtilisateur = new Utilisateur(unId, unPseudo, unMdpSha1, uneAdrMail, unNumTel, unNiveau, uneDateCreation, unNbTraces, uneDateDerniereTrace);
+
+				// Ajout de l'utilisateur à la collection
+				lesUtilisateurs.add(unUtilisateur);
+			}
+
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
 
 	// Méthode statique pour obtenir la liste des utilisateurs qui m'autorisent (service GetLesUtilisateursQuiMautorisent)
