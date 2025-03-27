@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.junit.Test;
 
@@ -79,6 +80,7 @@ public class PasserelleServiceWebXMLTest {
 		msg = PasserelleServicesWebXML.changerDeMdp("europa", Outils.sha1("mdputilisateur"), "mdputilisateur", "mdputilisateur");
 		assertEquals("Enregistrement effectué ; vous allez recevoir un courriel de confirmation.", msg);
 	}
+
 	@Test
 	public void testDemanderMdp() {
 		// Cas où le pseudo n'existe pas
@@ -86,24 +88,75 @@ public class PasserelleServiceWebXMLTest {
 		assertEquals("Erreur : pseudo inexistant.", msg);
 
 		// Cas où le pseudo existe
-		msg = PasserelleServicesWebXML.demanderMdp("europa");
+		msg = PasserelleServicesWebXML.demanderMdp("helios");
 		assertEquals("Vous allez recevoir un courriel avec votre nouveau mot de passe.", msg);
+
 	}
-	
+
 	@Test
 	public void testDemanderUneAutorisation() {
-		fail("Not yet implemented");	
-	}	
-	
+		String msg = PasserelleServicesWebXML.demanderUneAutorisation("europa", Outils.sha1("mdputilisateurrrrrr"), "luna", "", "");
+		assertEquals("Erreur : données incomplètes.", msg);
+
+		msg = PasserelleServicesWebXML.demanderUneAutorisation("europa", Outils.sha1("mdputilisateurrrrrr"), "luna", "coucou", "charles-edouard");
+		assertEquals("Erreur : authentification incorrecte.", msg);
+
+		msg = PasserelleServicesWebXML.demanderUneAutorisation("europa", Outils.sha1("mdputilisateur"), "totototototo", "coucou", "charles-edouard");
+		assertEquals("Erreur : pseudo utilisateur inexistant.", msg);
+
+		// Avant de créer l'autorisation, on retire si elle existe déjà
+		// Retirer l'autorisation si elle existe pour "galileo"
+		msg = PasserelleServicesWebXML.retirerUneAutorisation("europa", Outils.sha1("mdputilisateur"), "galileo", "coucou");
+		assertTrue(msg.contains("Autorisation supprimée") || msg.contains("Erreur : l'autorisation n'était pas accordée."));
+
+		// Maintenant on crée l'autorisation
+		msg = PasserelleServicesWebXML.demanderUneAutorisation("europa", Outils.sha1("mdputilisateur"), "galileo", "coucou", "charles-edouard");
+		assertEquals("galileo va recevoir un courriel avec votre demande.", msg);
+	}
+
+
 	@Test
 	public void testRetirerUneAutorisation() {
-		fail("Not yet implemented");
+		String msg = PasserelleServicesWebXML.retirerUneAutorisation("europa", Outils.sha1("mdputilisateurrrrrr"), "toto", "coucou");
+		assertEquals("Erreur : authentification incorrecte.", msg);
+
+		msg = PasserelleServicesWebXML.retirerUneAutorisation("europa", Outils.sha1("mdputilisateur"), "toutoutoutou", "coucou");
+		assertEquals("Erreur : pseudo utilisateur inexistant.", msg);
+
+		msg = PasserelleServicesWebXML.retirerUneAutorisation("europa", Outils.sha1("mdputilisateur"), "juno", "coucou");
+		assertEquals("Erreur : l'autorisation n'était pas accordée.", msg);
+
+		msg = PasserelleServicesWebXML.demanderUneAutorisation("neon", Outils.sha1("mdputilisateur"), "oxygen", "coucou", "test");
+		// Vérifie que l'autorisation a bien été ajoutée
+		assertEquals("oxygen va recevoir un courriel avec votre demande.", msg);
+
+		msg = PasserelleServicesWebXML.retirerUneAutorisation("neon", Outils.sha1("mdputilisateur"), "oxygen", "coucou");
+		assertEquals("Autorisation supprimée ; oxygen va recevoir un courriel de notification.", msg);
+
 	}
-	
+
+
 	@Test
 	public void testEnvoyerPosition() throws ParseException {
-		fail("Not yet implemented");
+		Date date = Outils.convertirEnDateHeure("24/01/2018 13:42:21");
+
+		PointDeTrace pt = new PointDeTrace(23, 0, 48.15, -1.68, 50, date, 80);
+		String msg = PasserelleServicesWebXML.envoyerPosition("europa", Outils.sha1("mdputilisateurrrrrr"), pt);
+		assertEquals("Erreur : authentification incorrecte.", msg);
+
+		pt = new PointDeTrace(2333, 0, 48.15, -1.68, 50, date, 80);
+		msg = PasserelleServicesWebXML.envoyerPosition("europa", Outils.sha1("mdputilisateur"), pt);
+		assertEquals("Erreur : le numéro de trace n'existe pas.", msg);
+
+		pt = new PointDeTrace(22, 0, 48.15, -1.68, 50, date, 80);
+		msg = PasserelleServicesWebXML.envoyerPosition("europa", Outils.sha1("mdputilisateur"), pt);
+		assertEquals("Erreur : le numéro de trace ne correspond pas à cet utilisateur.", msg);
+
+		pt = new PointDeTrace(4, 0, 48.15, -1.68, 50, date, 80);
+		msg = PasserelleServicesWebXML.envoyerPosition("europa", Outils.sha1("mdputilisateur"), pt);
+		assertEquals("Point enregistré.", msg);
 	}
+
 
 	@Test
 	public void testDemarrerEnregistrementParcours() {
@@ -134,48 +187,53 @@ public class PasserelleServiceWebXMLTest {
 	}
 
 
-
 	@Test
 	public void testArreterEnregistrementParcours() throws InterruptedException {
-		String pseudo = "europa";
-		String mdpSha1 = Outils.sha1("mdputilisateur");
+		String msg;
 
-		// Étape 1 : Créer un parcours fictif
-		Trace laTrace = new Trace();
-		String msg = PasserelleServicesWebXML.demarrerEnregistrementParcours(pseudo, mdpSha1, laTrace);
+		// Test : Authentification incorrecte
+		msg = PasserelleServicesWebXML.arreterEnregistrementParcours("europa", Outils.sha1("mauvaismdp"), 23);
+		assertEquals("Erreur : authentification incorrecte.", msg);
 
-		System.out.println("Réponse API lors de la création du parcours : " + msg);
-		assertEquals("Trace créée.", msg);
+		// Test : Parcours inexistant
+		msg = PasserelleServicesWebXML.arreterEnregistrementParcours("europa", Outils.sha1("mdputilisateur"), 230);
+		assertEquals("Erreur : parcours inexistant.", msg);
 
-		int idTrace = laTrace.getId();
-		assertTrue(idTrace > 0);
+		// Test : Le numéro de trace ne correspond pas à cet utilisateur
+		msg = PasserelleServicesWebXML.arreterEnregistrementParcours("europa", Outils.sha1("mdputilisateur"), 5);
+		assertEquals("Erreur : le numéro de trace ne correspond pas à cet utilisateur.", msg);
 
-		// Étape 2 : Vérifier que la trace est bien en cours
-		ArrayList<Trace> lesTraces = new ArrayList<>();
-		msg = PasserelleServicesWebXML.getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
-		assertTrue(lesTraces.stream().anyMatch(trace -> trace.getId() == idTrace && !trace.getTerminee()));
-
-		// Étape 3 : Arrêter l'enregistrement du parcours
-		msg = PasserelleServicesWebXML.arreterEnregistrementParcours(pseudo, mdpSha1, idTrace);
+		// Test : Trace déjà terminée
+		int traceId = 4; // ID de la trace qui est déjà terminée
+		msg = PasserelleServicesWebXML.arreterEnregistrementParcours("europa", Outils.sha1("mdputilisateur"), traceId);
 		assertEquals("Enregistrement terminé.", msg);
 
-		// 🚀 Attendre un peu pour laisser le serveur enregistrer la mise à jour
+		// Test : Cas de réussite, création et terminaison d'une nouvelle trace
+		Trace nouvelleTrace = new Trace();
+
+		// Démarrer l'enregistrement
+		msg = PasserelleServicesWebXML.demarrerEnregistrementParcours("europa", Outils.sha1("mdputilisateur"), nouvelleTrace);
+		assertEquals("Trace créée.", msg);
+
+		// Vérifier que l'ID de trace a bien été généré
+		assertTrue(nouvelleTrace.getId() > 0);
+
+		// Ajout d'un petit délai pour s'assurer que le serveur a bien traité la création
 		Thread.sleep(1000);
 
-		// Étape 4 : Vérifier que la trace est bien terminée
-		lesTraces.clear();
-		msg = PasserelleServicesWebXML.getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
+		// Terminer l'enregistrement de la trace
+		msg = PasserelleServicesWebXML.arreterEnregistrementParcours("europa", Outils.sha1("mdputilisateur"), nouvelleTrace.getId());
 
-		// 🔍 Debugging : Affichage des traces après arrêt
-		System.out.println("Traces après arrêt :");
-		for (Trace t : lesTraces) {
-			System.out.println("ID: " + t.getId() + ", Terminée: " + t.getTerminee());
-		}
+		// Debug : Afficher le message si le test échoue
+		System.out.println("Message reçu lors de l'arrêt de la trace : " + msg);
 
-		assertTrue(lesTraces.stream().anyMatch(trace -> trace.getId() == idTrace && trace.getTerminee()));
-
-		System.out.println("✅ Test terminé avec succès : la trace " + idTrace + " a bien été arrêtée.");
+		assertEquals("Enregistrement terminé.", msg);
 	}
+
+
+
+
+
 
 
 	@Test

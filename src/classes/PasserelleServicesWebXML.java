@@ -9,6 +9,7 @@
 package classes;
 
 import java.io.StringWriter;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -18,6 +19,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -389,8 +392,42 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    lesUtilisateurs : collection (vide) à remplir à partir des données fournies par le service web
 	public static String getLesUtilisateursQuiMautorisent(String pseudo, String mdpSha1, ArrayList<Utilisateur> lesUtilisateurs)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+		try {
+			String url = _adresseHebergeur + _urlGetLesUtilisateursQuiMautorisent;
+			url += "?pseudo=" + pseudo + "&mdp=" + mdpSha1;
+
+			InputStream flux = getFluxEnLecture(url);
+			if (flux == null) return "Erreur : Flux de lecture nul pour l'URL " + url;
+
+			Document doc = getDocumentXML(flux);
+			Element racine = (Element) doc.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			if (reponse.startsWith("Erreur")) return reponse;
+
+			lesUtilisateurs.clear();
+			NodeList utilisateurs = doc.getElementsByTagName("utilisateur");
+			for (int i = 0; i < utilisateurs.getLength(); i++) {
+				Element courant = (Element) utilisateurs.item(i);
+				int id = Integer.parseInt(courant.getElementsByTagName("id").item(0).getTextContent());
+				String unPseudo = courant.getElementsByTagName("pseudo").item(0).getTextContent();
+				String email = courant.getElementsByTagName("adrMail").item(0).getTextContent();
+				String tel = courant.getElementsByTagName("numTel").item(0).getTextContent();
+				int niveau = Integer.parseInt(courant.getElementsByTagName("niveau").item(0).getTextContent());
+				Date creation = Outils.convertirEnDate(courant.getElementsByTagName("dateCreation").item(0).getTextContent(), formatDateUS);
+				int nbTraces = Integer.parseInt(courant.getElementsByTagName("nbTraces").item(0).getTextContent());
+				Date derniereTrace = nbTraces > 0 ? Outils.convertirEnDate(courant.getElementsByTagName("dateDerniereTrace").item(0).getTextContent(), formatDateUS) : null;
+
+				lesUtilisateurs.add(new Utilisateur(id, unPseudo, "", email, tel, niveau, creation, nbTraces, derniereTrace));
+			}
+
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
+
 
 	// Méthode statique pour demander une autorisation (service DemanderUneAutorisation)
 	// La méthode doit recevoir 5 paramètres :
@@ -401,8 +438,26 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//   nomPrenom : le nom et le prénom du demandeur
 	public static String demanderUneAutorisation(String pseudo, String mdpSha1, String pseudoDestinataire, String texteMessage, String nomPrenom)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+		try {
+			String url = _adresseHebergeur + _urlDemanderUneAutorisation;
+			url += "?pseudo=" + pseudo;
+			url += "&mdp=" + mdpSha1;
+			url += "&pseudoDestinataire=" + pseudoDestinataire;
+			url += "&texteMessage=" + texteMessage;
+			url += "&nomPrenom=" + nomPrenom;
+
+			InputStream flux = getFluxEnLecture(url);
+			Document doc = getDocumentXML(flux);
+			Element racine = (Element) doc.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
+
 	
 	// Méthode statique pour retirer une autorisation (service RetirerUneAutorisation)
 	// La méthode doit recevoir 4 paramètres :
@@ -412,8 +467,25 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//   texteMessage : le texte d'un message pour un éventuel envoi de courriel
 	public static String retirerUneAutorisation(String pseudo, String mdpSha1, String pseudoARetirer, String texteMessage)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+		try {
+			String url = _adresseHebergeur + _urlRetirerUneAutorisation;
+			url += "?pseudo=" + pseudo;
+			url += "&mdp=" + mdpSha1;
+			url += "&pseudoARetirer=" + pseudoARetirer;
+			url += "&texteMessage=" + texteMessage;
+
+			InputStream flux = getFluxEnLecture(url);
+			Document doc = getDocumentXML(flux);
+			Element racine = (Element) doc.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			return reponse;
+		} catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
+
 	
 	// Méhode statique pour envoyer la position de l'utilisateur (service EnvoyerPosition)
 	// La méthode doit recevoir 3 paramètres :
@@ -422,8 +494,50 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    lePoint : un objet PointDeTrace (vide) qui permettra de récupérer le numéro attribué à partir des données fournies par le service web
 	public static String envoyerPosition(String pseudo, String mdpSha1, PointDeTrace lePoint)
 	{
-		return "";				// METHODE A CREER ET TESTER
+		String reponse = "";
+		try {
+			// Construction de l'URL avec les paramètres
+			String urlDuServiceWeb = _adresseHebergeur + _urlEnvoyerPosition;
+			urlDuServiceWeb += "?pseudo=" + URLEncoder.encode(pseudo, "UTF-8");
+			urlDuServiceWeb += "&mdp=" + URLEncoder.encode(mdpSha1, "UTF-8");
+			urlDuServiceWeb += "&idTrace=" + lePoint.getIdTrace();
+			urlDuServiceWeb += "&dateHeure=" + URLEncoder.encode(Outils.formaterDateHeureUS(lePoint.getDateHeure()), "UTF-8");
+			urlDuServiceWeb += "&latitude=" + lePoint.getLatitude();
+			urlDuServiceWeb += "&longitude=" + lePoint.getLongitude();
+			urlDuServiceWeb += "&altitude=" + lePoint.getAltitude();
+			urlDuServiceWeb += "&rythmeCardio=" + lePoint.getRythmeCardio();
+
+			// Log de l'URL avant l'appel
+			System.out.println("URL de l'API appelée : " + urlDuServiceWeb);
+
+			// Création d'un flux en lecture à partir du service web
+			InputStream unFluxEnLecture = getFluxEnLecture(urlDuServiceWeb);
+
+			// Vérification du flux
+			if (unFluxEnLecture == null) {
+				return "Erreur : flux de lecture null.";
+			}
+
+			// Création d'un objet org.w3c.dom.Document pour parser le XML
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setValidating(false);
+			factory.setNamespaceAware(true);
+			factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			Document leDocument = builder.parse(unFluxEnLecture);
+
+			// Parsing du flux XML
+			Element racine = (Element) leDocument.getElementsByTagName("data").item(0);
+			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
+
+			return reponse;
+		}
+		catch (Exception ex) {
+			return "Erreur : " + ex.getMessage();
+		}
 	}
+
+
 	
 	// Méthode statique pour obtenir un parcours et la liste de ses points (service GetUnParcoursEtSesPoints)
 	// La méthode doit recevoir 4 paramètres :
@@ -615,10 +729,10 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 				return "Erreur : Flux de lecture nul pour l'URL " + urlDuServiceWeb;
 			}
 
-			// 📄 Parsing du XML
+			//Parsing du XML
 			Document leDocument = getDocumentXML(unFluxEnLecture);
 
-			// 🔍 Debug : Vérifions le contenu du XML brut
+			//Debug : Vérifions le contenu du XML brut
 			System.out.println("XML Reçu : " + convertirDocumentEnString(leDocument));
 
 			// Extraction de la réponse
@@ -632,9 +746,6 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 				laTrace.setId(idTrace);
 			}
 
-			// 🔍 Debug : Vérifions ce qui a été extrait
-			System.out.println("Réponse API : " + reponse);
-			System.out.println("ID de la trace créée : " + laTrace.getId());
 
 			return reponse;
 		}
@@ -650,6 +761,7 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 	//    pseudo : le pseudo de l'utilisateur qui fait appel au service web
 	//    mdpSha1 : le mot de passe hashé en sha1
 	//    idTrace : l'id de la trace à terminer
+// Méthode statique pour terminer l'enregistrement d'un parcours (service ArreterEnregistrementParcours)
 	public static String arreterEnregistrementParcours(String pseudo, String mdpSha1, int idTrace) {
 		String reponse = "";
 		try {
@@ -659,9 +771,6 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 					+ "&mdp=" + mdpSha1
 					+ "&idTrace=" + idTrace;
 
-			// Debugging : Affichage de l'URL appelée
-			System.out.println("URL ArreterEnregistrementParcours : " + url);
-
 			// Exécution de la requête et récupération du flux XML
 			InputStream fluxXML = getFluxEnLecture(url);
 			if (fluxXML == null) return "Erreur : Impossible d'obtenir la réponse du serveur.";
@@ -670,40 +779,36 @@ public class PasserelleServicesWebXML extends PasserelleXML {
 			Document doc = getDocumentXML(fluxXML);
 			if (doc == null) return "Erreur : Impossible d'analyser la réponse XML.";
 
-			// Debugging : Affichage du XML reçu
-			System.out.println("XML Reçu : " + convertirDocumentEnString(doc));
-
 			// Récupération de la réponse API
 			Element racine = (Element) doc.getElementsByTagName("data").item(0);
 			reponse = racine.getElementsByTagName("reponse").item(0).getTextContent();
 
-			// Debugging : Vérifions la réponse extraite
-			System.out.println("Réponse API : " + reponse);
+			// Supprimez ou commentez tout le bloc suivant qui modifie la réponse
+        /*
+        if (reponse.equals("Enregistrement terminé.")) {
+            // Attendre un peu pour permettre au serveur de traiter la mise à jour de la trace
+            Thread.sleep(2000); // Délai de 2 secondes
 
-			// Vérifier si l'arrêt a bien été enregistré
-			if (reponse.equals("Enregistrement terminé.")) {
-				// Vérifier dans la liste des parcours que la trace est bien terminée
-				ArrayList<Trace> lesTraces = new ArrayList<>();
-				getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
+            // Vérifier dans la liste des parcours que la trace est bien terminée
+            ArrayList<Trace> lesTraces = new ArrayList<>();
+            getLesParcoursDunUtilisateur(pseudo, mdpSha1, pseudo, lesTraces);
 
-				for (Trace trace : lesTraces) {
-					if (trace.getId() == idTrace) {
-						boolean terminee = trace.getTerminee(); //Vérification correcte
-						System.out.println("Trace ID: " + idTrace + ", Terminée: " + terminee);
-						if (!terminee) {
-							return "Erreur : La trace n'a pas été correctement terminée.";
-						}
-					}
-				}
-			}
+            for (Trace trace : lesTraces) {
+                if (trace.getId() == idTrace) {
+                    boolean terminee = trace.getTerminee();
+                    if (!terminee) {
+                        return "Erreur : cette trace est déjà terminée.";
+                    }
+                }
+            }
+        }
+        */
 
 			return reponse;
 		} catch (Exception ex) {
 			return "Erreur : " + ex.getMessage();
 		}
 	}
-
-
 
 
 
